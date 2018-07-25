@@ -127,7 +127,7 @@ int i2c_write_reg(__u16 addr, __u32 reg, int reg_size, __u32 data, int data_size
 	print_result(">>> ", buf, reg_size, buf+reg_size, data_size);
 
 	ret = i2c_write(addr, buf, reg_size+data_size);
-	if(ret) {
+	if(ret < 0) {
 		printf("write reg failed!(%d)\n", ret);
 		return ret;
 	}
@@ -151,13 +151,13 @@ int i2c_read_reg(__u16 addr, __u32 reg, int reg_size, __u8* buf, int len)
 	}
 
 	ret = i2c_write(addr, reg_buf, reg_size);
-	if(ret){
+	if(ret < 0){
 		print_result("*** ", reg_buf, reg_size, NULL, 0);
 		printf("write reg failed!(%d)\n", ret);
 		return ret;
 	}
 	ret = i2c_read(addr, buf, len);
-	if(ret) {
+	if(ret < 0) {
 		print_result("*** ", reg_buf, reg_size, NULL, 0);
 		printf("read reg failed!(%d)\n", ret);
 		return ret;

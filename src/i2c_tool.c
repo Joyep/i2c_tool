@@ -120,7 +120,7 @@ int main(int argc,char *argv[])
 		ret = i2c_read_reg(i2c_addr, reg, reg_size, buf, data_size);
 	}
 
-	if(ret) {
+	if(ret < 0) {
 		printf("error!\n");
 	}
 

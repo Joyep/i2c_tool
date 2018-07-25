@@ -13,6 +13,21 @@
 
 #define OPT_LENGTH 10
 
+
+void print_help()
+{
+	printf("******\n");
+	printf("i2ctool version v0.1\n");
+	printf("******\n");
+	printf("Usage:\n");
+	printf("i2ctool -i 2 -a 0x0f -r 2 -d 4  0x1122 0x11223344\n");
+	printf("-i: i2c adapter bus index\n");
+	printf("-a: i2c device address\n");
+	printf("-r: register byte width\n");
+	printf("-d: data byte width\n");
+	printf("-n: read number, default 1\n");
+}
+
 int main(int argc,char *argv[])
 {
     int opt=0;
@@ -80,6 +95,7 @@ int main(int argc,char *argv[])
 	} else {
 		//error
 		printf("params error\n");
+		print_help();
 		return -1;
 	}
 

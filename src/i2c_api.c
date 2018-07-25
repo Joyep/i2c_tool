@@ -92,6 +92,10 @@ void print_result(char* sign, __u8* reg, int reg_size, __u8* data, int data_size
 	printf("%s", sign);
 	print_bytes(reg, reg_size);
 	printf(" = ");
+	if(data_size <= 0) {
+		printf("\n");
+		return;
+	}
 	print_bytes(data, data_size);
 	printf("\n");
 }
@@ -101,6 +105,7 @@ int i2c_write_reg(__u16 addr, __u32 reg, int reg_size, __u32 data, int data_size
 {
 	__u8 buf[8];
 	int i;
+	int ret;
 
 	if(reg_size > 4 || reg_size < 1) {
 		printf("reg_size error!\n");
@@ -121,7 +126,12 @@ int i2c_write_reg(__u16 addr, __u32 reg, int reg_size, __u32 data, int data_size
 
 	print_result(">>> ", buf, reg_size, buf+reg_size, data_size);
 
-	return i2c_write(addr, buf, reg_size+data_size);
+	ret = i2c_write(addr, buf, reg_size+data_size);
+	if(ret) {
+		printf("write reg failed!(%d)\n", ret);
+		return ret;
+	}
+
 
 }
 
@@ -140,11 +150,16 @@ int i2c_read_reg(__u16 addr, __u32 reg, int reg_size, __u8* buf, int len)
 		reg_buf[i] = reg >> ((reg_size-i-1)*8) & 0xff;
 	}
 
-	i2c_write(addr, reg_buf, reg_size);
+	ret = i2c_write(addr, reg_buf, reg_size);
+	if(ret){
+		print_result("*** ", reg_buf, reg_size, NULL, 0);
+		printf("write reg failed!(%d)\n", ret);
+		return ret;
+	}
 	ret = i2c_read(addr, buf, len);
 	if(ret) {
-		print_result("*** ", reg_buf, reg_size, buf, len);
-		printf("read failed!");
+		print_result("*** ", reg_buf, reg_size, NULL, 0);
+		printf("read reg failed!(%d)\n", ret);
 		return ret;
 	}
 

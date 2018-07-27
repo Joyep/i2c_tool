@@ -13,28 +13,29 @@
 #include <linux/i2c.h>
 #include <linux/i2c-dev.h>
 
+#include "i2c_device.h"
 
 #include "log.h"
 #define LOG_TAG "i2c_api"
 static int log_level = LOG_LEVEL_DEBUG;
 
 
-void print_bytes(__u8* buf, int size)
+static void print_bytes(__u8* buf, int size)
 {
 	int i;
-	printf("0x");
+	log("0x");
 	for(i=0; i<size; i++){
-		printf("%02x", buf[i]);
+		log("%02x", buf[i]);
 	}
 }
 
-void print_result(char* sign, __u8* reg, int reg_size, __u8* data, int data_size)
+static void print_result(char* name, __u8* reg, int reg_size, __u8* data, int data_size)
 {
-	printf("%s", sign);
+	log("%s", name);
 	print_bytes(reg, reg_size);
-	printf(" = ");
+	log(" = ");
 	if(data_size <= 0) {
-		printf("\n");
+		log("\n");
 		return;
 	}
 	print_bytes(data, data_size);
@@ -42,33 +43,21 @@ void print_result(char* sign, __u8* reg, int reg_size, __u8* data, int data_size
 }
 
 
-int i2c_open(char *dev)
-{
-	int fd = open(dev, O_RDWR);
-	if (fd < 0) {
-		LOG_E("open %s failed (%d)", dev, fd);
-		return fd;
-	}
-	return fd;
-}
 
-int i2c_close(int fd)
+static int i2c_close(i2c_t *i2c)
 {
-	if(fd != -1) {
-		fd = -1;
-		return close(fd);
-	}
-	LOG_E("i2c not open, skip!");
+	close(i2c->fd);
+	free(i2c);
 	return 0;
 }
 
-int i2c_write(int fd, __u16 addr, __u8 * buf, int len)
+static int i2c_write(i2c_t* i2c, __u8 * buf, int len)
 {
 	struct i2c_msg msgs[1];
 	struct i2c_rdwr_ioctl_data ioctl_data;
 	int ret;
 
-	msgs[0].addr = addr;
+	msgs[0].addr = i2c->addr;
 	msgs[0].flags = 0;
 	msgs[0].buf = buf;
 	msgs[0].len = len;
@@ -76,7 +65,7 @@ int i2c_write(int fd, __u16 addr, __u8 * buf, int len)
 
 	ioctl_data.nmsgs = 1;
 	ioctl_data.msgs = msgs;
-	ret = ioctl(fd, I2C_RDWR, &ioctl_data);
+	ret = ioctl(i2c->fd, I2C_RDWR, &ioctl_data);
 	if (ret < 0) {
 		LOG_E("ioctl failed (%d)", ret);
 	}
@@ -84,13 +73,13 @@ int i2c_write(int fd, __u16 addr, __u8 * buf, int len)
 }
 
 
-int i2c_read(int fd, __u16 addr, __u8 * buf, int len)
+static int i2c_read(i2c_t* i2c, __u8 * buf, int len)
 {
 	struct i2c_msg msgs[1];
 	struct i2c_rdwr_ioctl_data ioctl_data;
 	int ret;
 
-	msgs[0].addr = addr;
+	msgs[0].addr = i2c->addr;
 	msgs[0].flags = I2C_M_RD;
 	msgs[0].buf = buf;
 	msgs[0].len = len;
@@ -98,7 +87,7 @@ int i2c_read(int fd, __u16 addr, __u8 * buf, int len)
 	//
 	ioctl_data.nmsgs = 1;
 	ioctl_data.msgs = msgs;
-	ret = ioctl(fd, I2C_RDWR, &ioctl_data);
+	ret = ioctl(i2c->fd, I2C_RDWR, &ioctl_data);
 	if (ret < 0) {
 		LOG_E("ioctl failed (%d)", ret);
 	}
@@ -106,12 +95,13 @@ int i2c_read(int fd, __u16 addr, __u8 * buf, int len)
 }
 
 
-
-int i2c_write_reg(int fd, __u16 addr, __u32 reg, int reg_size, __u32 data, int data_size)
+static int i2c_write_reg(i2c_t *i2c, __u32 reg, __u32 data)
 {
 	__u8 buf[8];
 	int i;
 	int ret;
+	int reg_size = i2c->reg_size;
+	int data_size = i2c->data_size;
 
 	if(reg_size > 4 || reg_size < 1) {
 		LOG_E("reg_size error!");
@@ -134,7 +124,7 @@ int i2c_write_reg(int fd, __u16 addr, __u32 reg, int reg_size, __u32 data, int d
 		print_result(">>> ", buf, reg_size, buf+reg_size, data_size);
 	}
 
-	ret = i2c_write(fd, addr, buf, reg_size+data_size);
+	ret = i2c_write(i2c, buf, reg_size+data_size);
 	if(ret < 0) {
 		LOG_E("write reg failed!(%d)", ret);
 		return ret;
@@ -143,11 +133,12 @@ int i2c_write_reg(int fd, __u16 addr, __u32 reg, int reg_size, __u32 data, int d
 
 }
 
-int i2c_read_reg(int fd, __u16 addr, __u32 reg, int reg_size, __u8* buf, int len)
+static int i2c_read_reg(i2c_t* i2c, __u32 reg, __u8* buf)
 {
 	__u8 reg_buf[4];
 	int i;
 	int ret;
+	int reg_size = i2c->reg_size;
 
 	if(reg_size > 4 || reg_size < 1) {
 		LOG_E("reg_size error!\n");
@@ -158,20 +149,72 @@ int i2c_read_reg(int fd, __u16 addr, __u32 reg, int reg_size, __u8* buf, int len
 		reg_buf[i] = reg >> ((reg_size-i-1)*8) & 0xff;
 	}
 
-	ret = i2c_write(fd, addr, reg_buf, reg_size);
+	ret = i2c_write(i2c, reg_buf, reg_size);
 	if(ret < 0){
-		print_result("*** ", reg_buf, reg_size, NULL, 0);
+		print_result("!!! ", reg_buf, reg_size, NULL, 0);
 		LOG_E("write reg failed!(%d)", ret);
 		return ret;
 	}
-	ret = i2c_read(fd, addr, buf, len);
+	ret = i2c_read(i2c, buf, i2c->data_size);
 	if(ret < 0) {
-		print_result("*** ", reg_buf, reg_size, NULL, 0);
+		print_result("!!! ", reg_buf, reg_size, NULL, 0);
 		LOG_E("read reg failed!(%d)", ret);
 		return ret;
 	}
 
-	print_result("*** ", reg_buf, reg_size, buf, len);
+	print_result("*** ", reg_buf, reg_size, buf, i2c->data_size);
 
 	return 0;
 }
+
+
+static int i2c_set_timeout(i2c_t* i2c, int timeout)
+{
+	int ret = ioctl(i2c->fd, I2C_TIMEOUT, timeout);
+	if(ret < 0) {
+		LOG_E("ioctl failed");
+	}
+	return ret;
+}
+
+static int i2c_set_retries(i2c_t* i2c, int retry)
+{
+	int ret = ioctl(i2c->fd, I2C_RETRIES, retry);
+	if(ret < 0) {
+		LOG_E("ioctl failed");
+	}
+	return ret;
+}
+
+i2c_t* i2c_open(const char* dev, __u16 addr, __u8 reg_size, __u8 data_size)
+{
+	int fd = open(dev, O_RDWR);
+	i2c_t *i2c;
+
+	if (fd < 0) {
+		LOG_E("open %s failed (%d)", dev, fd);
+		return NULL;
+	}
+
+	i2c = (i2c_t*)malloc(sizeof(i2c_t));
+	if(!i2c) {
+		LOG_E("malloc i2c device error!");
+		close(fd);
+		return NULL;
+	}
+
+	i2c->fd = fd;
+	i2c->addr = addr;
+	i2c->reg_size = reg_size > 4 ? 4 : reg_size;
+	i2c->data_size = data_size > 4 ? 4 : data_size;
+
+	i2c->close = i2c_close;
+	i2c->write = i2c_write;
+	i2c->read = i2c_read;
+	i2c->write_reg = i2c_write_reg;
+	i2c->read_reg = i2c_read_reg;
+
+	return i2c;
+}
+
+

@@ -7,7 +7,7 @@
 #include <unistd.h>
 #include <string.h>
 
-#include "i2c_api.h"
+#include "i2c_device.h"
 
 #include "log.h"
 #define LOG_TAG "i2c_tool"
@@ -64,6 +64,9 @@ int main(int argc,char *argv[])
 	int fd;
 
 
+	i2c_t *i2c;
+
+
 	//1, parse params
     while((opt=getopt(argc,argv,"i:a:r:d:n:"))!=-1) {
         switch(opt) {
@@ -111,25 +114,26 @@ int main(int argc,char *argv[])
 
 	//open
 	snprintf(i2c_device_name, 20, "%s%d", I2C_BUS, i2c_index);
-	fd = i2c_open(i2c_device_name);
-	if(fd < 0) {
-		return fd;
+	i2c = i2c_open(i2c_device_name, i2c_addr, reg_size, data_size);
+	if(!i2c) {
+		LOG_E("i2c open failed!!");
+		return -1;
 	}
 
 	//read or write
 	if(to_write) {
 		//log_i("Write: (0x%02x) = 0x%02x ...\n", reg, data);
-		ret = i2c_write_reg(fd, i2c_addr, reg, reg_size, data, data_size);
+		ret = i2c->write_reg(i2c, reg, data);
 	} else {
 		//log_i("Read: (0x%02x) for %d number\n", reg, read_number);
-		ret = i2c_read_reg(fd, i2c_addr, reg, reg_size, buf, data_size);
+		ret = i2c->read_reg(i2c, reg, buf);
 	}
 
 	if(ret < 0) {
 		LOG_E("error!");
 	}
 
-	i2c_close(fd);
+	i2c->close(i2c);
 
     return ret;
 }

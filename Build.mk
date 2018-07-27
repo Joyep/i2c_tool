@@ -12,8 +12,8 @@ LOCAL_C_INCLUDES:=  \
         ./include
 
 LOCAL_SRC_FILES := \
-                src/i2c_tool.c \
-                src/i2c_api.c
+                src/i2c_test.c \
+                src/i2c_device.c
 
 
 LOCAL_CFLAGS := -fPIC

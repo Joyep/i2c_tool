@@ -1,3 +1,4 @@
 obj
 i2ctool
 tags
+*.o

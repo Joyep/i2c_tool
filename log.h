@@ -9,16 +9,13 @@
 #define debug_level(level, fmt, arg...) do {\
 	if (level <= log_level) {\
 		if (level == LOG_LEVEL_ERROR) {\
-			printf("[E] %s: %s() +%d: "fmt"\n", LOG_TAG, __func__, __LINE__, ##arg);\
+			printf("[E] %s: +%d %s(): "fmt"\n", LOG_TAG, __LINE__, __func__, ##arg);\
 		}\
 		else if (level == LOG_LEVEL_INFO) {\
-			printf("[I] %s: "fmt"\n", LOG_TAG, __func__, __LINE__, ##arg);\
+			printf("[I] %s: "fmt"\n", LOG_TAG, ##arg);\
 		}\
 		else if (level == LOG_LEVEL_DEBUG) {\
-			printf("[D] %s: "fmt"\n", LOG_TAG, __func__, __LINE__, ##arg);\
-		}\
-		else {\
-			printf("[?] %s: %s() +%d: "fmt"\n", LOG_TAG, __func__, __LINE__, ##arg);\
+			printf("[D] %s: "fmt"\n", LOG_TAG, ##arg);\
 		}\
 	}\
 } while (0)

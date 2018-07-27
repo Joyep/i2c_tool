@@ -35,18 +35,6 @@ int main(int argc,char *argv[])
     int opt=0;
 	char i2c_device_name[20];
 
-	/*
-	int i = 0;
-	int a = 0;
-	int r = 0;
-	int d = 0;
-
-	char iv[OPT_LENGTH];
-	char av[OPT_LENGTH];
-	char rv[OPT_LENGTH];
-	char dv[OPT_LENGTH];
-	*/
-
 	unsigned int i2c_index = 0;
 	unsigned int i2c_addr = 0x0f;//0x0f
 	unsigned int reg_size = 1;

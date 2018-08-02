@@ -17,7 +17,7 @@
 
 #include "log.h"
 #define LOG_TAG "i2c_api"
-static int log_level = LOG_LEVEL_DEBUG;
+static int log_level = LOG_LEVEL_ERROR;
 
 
 static void print_bytes(__u8* buf, int size)
@@ -31,6 +31,10 @@ static void print_bytes(__u8* buf, int size)
 
 static void print_result(char* name, __u8* reg, int reg_size, __u8* data, int data_size)
 {
+
+	if(!could_debug()) {
+		return;
+	}
 	log("%s", name);
 	print_bytes(reg, reg_size);
 	log(" = ");
@@ -120,9 +124,7 @@ static int i2c_write_reg(i2c_t *i2c, __u32 reg, __u32 data)
 		buf[reg_size+i] = data >> (i*8) & 0xff;
 	}
 
-	if(could_debug()) {
-		print_result(">>> ", buf, reg_size, buf+reg_size, data_size);
-	}
+	print_result(">>> ", buf, reg_size, buf+reg_size, data_size);
 
 	ret = i2c_write(i2c, buf, reg_size+data_size);
 	if(ret < 0) {
@@ -186,7 +188,13 @@ static int i2c_set_retries(i2c_t* i2c, int retry)
 	return ret;
 }
 
-i2c_t* i2c_open(const char* dev, __u16 addr, __u8 reg_size, __u8 data_size)
+static void i2c_config(i2c_t* i2c, __u8 reg_size, __u8 data_size)
+{
+	i2c->reg_size = reg_size > 4 ? 4 : reg_size;
+	i2c->data_size = data_size > 4 ? 4 : data_size;
+}
+
+i2c_t* i2c_open(const char* dev, __u16 addr)
 {
 	int fd = open(dev, O_RDWR);
 	i2c_t *i2c;
@@ -205,10 +213,12 @@ i2c_t* i2c_open(const char* dev, __u16 addr, __u8 reg_size, __u8 data_size)
 
 	i2c->fd = fd;
 	i2c->addr = addr;
-	i2c->reg_size = reg_size > 4 ? 4 : reg_size;
-	i2c->data_size = data_size > 4 ? 4 : data_size;
+	i2c->reg_size = 1;//reg_size > 4 ? 4 : reg_size;
+	i2c->data_size = 1;//data_size > 4 ? 4 : data_size;
 
+	i2c->config = i2c_config;
 	i2c->close = i2c_close;
+
 	i2c->write = i2c_write;
 	i2c->read = i2c_read;
 	i2c->write_reg = i2c_write_reg;

@@ -15,9 +15,10 @@ struct i2c_device {
 	int (*write_reg)(i2c_t *i2c, __u32 reg, __u32 data);
 	int (*read_reg)(i2c_t *i2c, __u32 reg, __u8* data);
 	int (*close)(i2c_t *i2c);
+	void (*config)(i2c_t* i2c, __u8 reg_size, __u8 data_size);
 };
 
-extern i2c_t* i2c_open(const char *dev, __u16 addr, __u8 reg_size, __u8 data_size);
+extern i2c_t* i2c_open(const char *dev, __u16 addr);
 
 #endif
 

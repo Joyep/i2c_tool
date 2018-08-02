@@ -108,6 +108,8 @@ int main(int argc,char *argv[])
 		return -1;
 	}
 
+    i2c->config(reg_size, data_size);
+
 	//read or write
 	if(to_write) {
 		//log_i("Write: (0x%02x) = 0x%02x ...\n", reg, data);

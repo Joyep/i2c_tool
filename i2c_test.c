@@ -102,13 +102,13 @@ int main(int argc,char *argv[])
 
 	//open
 	snprintf(i2c_device_name, 20, "%s%d", I2C_BUS, i2c_index);
-	i2c = i2c_open(i2c_device_name, i2c_addr, reg_size, data_size);
+	i2c = i2c_open(i2c_device_name, i2c_addr);
 	if(!i2c) {
 		LOG_E("i2c open failed!!");
 		return -1;
 	}
 
-    i2c->config(reg_size, data_size);
+    i2c->config(i2c, reg_size, data_size);
 
 	//read or write
 	if(to_write) {

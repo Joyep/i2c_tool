@@ -3,7 +3,7 @@ TARGET = i2ctool
 _OBJ = i2c_device.o \
 	   i2c_test.o
 
-_DEPS = i2c_api.h log.h
+_DEPS = i2c_device.h log.h
 
 IDIR = ./
 LDIR = ./lib

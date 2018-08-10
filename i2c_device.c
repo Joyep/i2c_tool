@@ -1,9 +1,4 @@
-/* i2c_api.c
- * Auther: fsysky
- * E-mail: fsysky@163.com
- * Description:
- * I2C user space control
- */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -15,9 +10,8 @@
 
 #include "i2c_device.h"
 
+#define LOG_TAG "i2c_device"
 #include "log.h"
-#define LOG_TAG "i2c_api"
-static int log_level = LOG_LEVEL_ERROR;
 
 
 static void print_bytes(__u8* buf, int size)
@@ -35,7 +29,7 @@ static void print_result(char* name, __u8* reg, int reg_size, __u8* data, int da
 	if(!could_debug()) {
 		return;
 	}
-	log("%s", name);
+	LOG_I("%s", name);
 	print_bytes(reg, reg_size);
 	log(" = ");
 	if(data_size <= 0) {
@@ -98,7 +92,11 @@ static int i2c_read(i2c_t* i2c, __u8 * buf, int len)
 	return ret;
 }
 
-
+/**
+ * i2c_write_reg
+ * reg max 4 bytes, high byte first
+ * data max 4 bytes, low byte first
+ */
 static int i2c_write_reg(i2c_t *i2c, __u32 reg, __u32 data)
 {
 	__u8 buf[8];
@@ -132,18 +130,24 @@ static int i2c_write_reg(i2c_t *i2c, __u32 reg, __u32 data)
 		return ret;
 	}
 
-
+	return ret;
 }
 
-static int i2c_read_reg(i2c_t* i2c, __u32 reg, __u8* buf)
+static int i2c_read_reg(i2c_t* i2c, __u32 reg, __u32* data)
 {
 	__u8 reg_buf[4];
+	__u8 data_buf[4];
 	int i;
 	int ret;
 	int reg_size = i2c->reg_size;
+	int data_size = i2c->data_size;
 
 	if(reg_size > 4 || reg_size < 1) {
 		LOG_E("reg_size error!\n");
+		return -1;
+	}
+	if(data_size > 4 || data_size < 1) {
+		LOG_E("data_size error!");
 		return -1;
 	}
 
@@ -157,14 +161,19 @@ static int i2c_read_reg(i2c_t* i2c, __u32 reg, __u8* buf)
 		LOG_E("write reg failed!(%d)", ret);
 		return ret;
 	}
-	ret = i2c_read(i2c, buf, i2c->data_size);
+	ret = i2c_read(i2c, data_buf, data_size);
 	if(ret < 0) {
 		print_result("!!! ", reg_buf, reg_size, NULL, 0);
 		LOG_E("read reg failed!(%d)", ret);
 		return ret;
 	}
 
-	print_result("*** ", reg_buf, reg_size, buf, i2c->data_size);
+	print_result("*** ", reg_buf, reg_size, data_buf, data_size);
+
+	//parse data buf to u32 data
+	for(i = 0; i < data_size; i++) {
+		(*data) |= data_buf[i] << (data_size-i-1)*8;
+	}
 
 	return 0;
 }

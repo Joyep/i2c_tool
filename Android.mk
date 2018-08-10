@@ -1,21 +1,33 @@
-# Android.mk，其它 linux 系统请自己写 Makefile
 LOCAL_PATH:= $(call my-dir)
 
+
 include $(CLEAR_VARS)
+LOCAL_SRC_FILES := i2c_device.c
+LOCAL_MODULE := libi2c
+LOCAL_MODULE_TAGS := optional
+LOCAL_SHARED_LIBRARIES := liblog
+LOCAL_C_INCLUDES := $(LOCAL_PATH)/include
+LOCAL_CFLAGS := -Werror
+#LOCAL_CFLAGS := -O2 -W -Wall
+LOCAL_CFLAGS += -DLOG_LEVEL=2
+LOCAL_CFLAGS += -DLOG_TO_TERM
 
-LOCAL_CFLAGS := -O2 -W -Wall
+#include $(BUILD_SHARED_LIBRARY)
+include $(BUILD_STATIC_LIBRARY)
 
-LOCAL_C_INCLUDES:=  \
-        $(LOCAL_PATH)/include
 
-LOCAL_SRC_FILES := \
-                i2c_tool.c \
-                i2c_api.c
-
-LOCAL_MODULE := i2ctool
-
-LOCAL_STATIC_LIBRARIES := libc
-
-LOCAL_FORCE_STATIC_EXECUTABLE := true
+include $(CLEAR_VARS)
+LOCAL_SRC_FILES := i2c_test.c
+LOCAL_MODULE := i2ctest
+LOCAL_MODULE_TAGS := optional
+LOCAL_SHARED_LIBRARIES := liblog
+LOCAL_STATIC_LIBRARIES := libi2c
+LOCAL_C_INCLUDES := $(LOCAL_PATH)/include
+LOCAL_CFLAGS := -Werror
+LOCAL_CFLAGS += -DLOG_LEVEL=3
+LOCAL_CFLAGS += -DLOG_TO_TERM
+#LOCAL_CFLAGS := -O2 -W -Wall
 
 include $(BUILD_EXECUTABLE)
+
+

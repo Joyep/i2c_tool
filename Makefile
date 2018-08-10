@@ -1,18 +1,19 @@
-TARGET = i2ctool
+TARGET = i2ctest
 
 _OBJ = i2c_device.o \
 	   i2c_test.o
 
-_DEPS = i2c_api.h
+_DEPS = i2c_device.h \
+		log.h
 
-IDIR = ./
+IDIR = ./include
 LDIR = ./lib
 SDIR = ./
 ODIR = .
 LIBS = -lm
 
 CC=gcc
-CFLAGS=-I$(IDIR)
+CFLAGS=-I$(IDIR) -DLOG_LEVEL=3
 
 DEPS = $(patsubst %,$(IDIR)/%,$(_DEPS))
 OBJ = $(patsubst %,$(ODIR)/%,$(_OBJ))

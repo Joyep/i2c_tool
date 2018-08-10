@@ -10,10 +10,10 @@ struct i2c_device {
 	int addr;
 	int reg_size;
 	int data_size;
-	int (*write)(i2c_t *i2c, __u8 * buf, int len);
-	int (*read)(i2c_t *i2c, __u8 * buf, int len);
+	int (*write)(i2c_t *i2c, __u8* buf, int len);
+	int (*read)(i2c_t *i2c, __u8* buf, int len);
 	int (*write_reg)(i2c_t *i2c, __u32 reg, __u32 data);
-	int (*read_reg)(i2c_t *i2c, __u32 reg, __u8* data);
+	int (*read_reg)(i2c_t *i2c, __u32 reg, __u32* data);
 	int (*close)(i2c_t *i2c);
 	void (*config)(i2c_t* i2c, __u8 reg_size, __u8 data_size);
 };
